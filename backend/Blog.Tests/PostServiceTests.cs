@@ -1,5 +1,6 @@
 using Blog.Api.Data;
 using Blog.Api.Dtos;
+using Blog.Api.Models;
 using Blog.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -21,21 +22,54 @@ public class PostServiceTests
     public async Task CreateAsync_PersistsPost()
     {
         await using var context = CreateContext();
+        var blog = new Blog
+        {
+            Author = "Test Author",
+            Url = "https://example.com"
+        };
+
+        context.Blogs.Add(blog);
+        await context.SaveChangesAsync();
+
         var service = new PostService(context);
         var dto = new PostCreateDto
         {
             Title = "Hello",
-            AuthorName = "Test",
             Content = "Sample content",
-            PublishedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+            PublishedAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            BlogId = blog.BlogId
         };
 
         var created = await service.CreateAsync(dto);
 
-        Assert.Equal("Hello", created.Title);
-        Assert.Equal("Test", created.AuthorName);
+        Assert.NotNull(created);
+        Assert.Equal("Hello", created!.Title);
+        Assert.Equal(blog.BlogId, created.BlogId);
+        Assert.Equal("Test Author", created.BlogAuthor);
+        Assert.Equal("https://example.com", created.BlogUrl);
         Assert.Equal(new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc), created.PublishedAt);
         Assert.Single(context.Posts);
+    }
+
+    [Fact]
+    public async Task CreateAsync_CreatesBlog_WhenNoBlogIdProvided()
+    {
+        await using var context = CreateContext();
+        var service = new PostService(context);
+        var dto = new PostCreateDto
+        {
+            Title = "New",
+            Content = "Content",
+            BlogAuthor = "Another Author",
+            BlogUrl = "https://another.example.com"
+        };
+
+        var created = await service.CreateAsync(dto);
+
+        Assert.NotNull(created);
+        Assert.Equal("Another Author", created!.BlogAuthor);
+        Assert.Equal("https://another.example.com", created.BlogUrl);
+        Assert.Single(context.Blogs);
     }
 
     [Fact]
@@ -46,9 +80,9 @@ public class PostServiceTests
         var update = new PostUpdateDto
         {
             Title = "Updated",
-            AuthorName = "Author",
             Content = "Updated content",
-            PublishedAt = DateTime.UtcNow
+            PublishedAt = DateTime.UtcNow,
+            BlogId = 1
         };
 
         var result = await service.UpdateAsync(42, update);
@@ -60,16 +94,27 @@ public class PostServiceTests
     public async Task DeleteAsync_RemovesPost()
     {
         await using var context = CreateContext();
+        var blog = new Blog
+        {
+            Author = "Author",
+            Url = "https://blog.example.com"
+        };
+
+        context.Blogs.Add(blog);
+        await context.SaveChangesAsync();
+
         var service = new PostService(context);
         var post = await service.CreateAsync(new PostCreateDto
         {
             Title = "Post",
-            AuthorName = "Author",
             Content = "Content",
-            PublishedAt = DateTime.UtcNow
+            PublishedAt = DateTime.UtcNow,
+            BlogId = blog.BlogId
         });
 
-        var deleted = await service.DeleteAsync(post.Id);
+        Assert.NotNull(post);
+
+        var deleted = await service.DeleteAsync(post!.PostId);
 
         Assert.True(deleted);
         Assert.Empty(context.Posts);

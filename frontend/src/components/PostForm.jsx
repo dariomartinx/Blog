@@ -2,7 +2,8 @@ import { useState } from 'react';
 
 const createInitialForm = () => ({
   title: '',
-  authorName: '',
+  blogAuthor: '',
+  blogUrl: '',
   content: '',
   publishedAt: new Date().toISOString().slice(0, 16)
 });
@@ -19,7 +20,8 @@ export default function PostForm({ onSubmit, loading }) {
     event.preventDefault();
     const payload = {
       title: form.title,
-      authorName: form.authorName,
+      blogAuthor: form.blogAuthor,
+      blogUrl: form.blogUrl || null,
       content: form.content,
       publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null
     };
@@ -47,13 +49,22 @@ export default function PostForm({ onSubmit, loading }) {
           />
         </label>
         <label>
-          Autor
+          Autor del blog
           <input
-            name="authorName"
-            value={form.authorName}
+            name="blogAuthor"
+            value={form.blogAuthor}
             onChange={handleChange}
             required
             maxLength={100}
+          />
+        </label>
+        <label>
+          URL del blog (opcional)
+          <input
+            name="blogUrl"
+            value={form.blogUrl}
+            onChange={handleChange}
+            type="url"
           />
         </label>
         <label>

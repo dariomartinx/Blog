@@ -30,15 +30,15 @@ export default function PostList({ refreshToken = 0, onRefreshRequest }) {
       setPosts(data);
       setCommentRefresh({});
       setPostDetails((current) => {
-        const ids = new Set(data.map((post) => post.id));
+        const ids = new Set(data.map((post) => post.postId));
         return Object.fromEntries(
           Object.entries(current).filter(([id]) => ids.has(Number(id)))
         );
       });
       if (data.length > 0) {
         setSelectedPostId((current) => {
-          if (!current || !data.some((post) => post.id === current)) {
-            return data[0].id;
+          if (!current || !data.some((post) => post.postId === current)) {
+            return data[0].postId;
           }
           return current;
         });
@@ -99,37 +99,46 @@ export default function PostList({ refreshToken = 0, onRefreshRequest }) {
           <p>Todavía no hay publicaciones.</p>
         ) : (
           posts.map((post) => (
-            <article key={post.id} className="post-card">
+            <article key={post.postId} className="post-card">
               <h2>{post.title}</h2>
               <p>
-                <strong>{post.authorName}</strong> –{' '}
-                {new Date(post.publishedAt).toLocaleString()}
+                <strong>{post.blogAuthor ?? 'Autor desconocido'}</strong>
+                {post.blogUrl && (
+                  <>
+                    {' '}
+                    <a href={post.blogUrl} target="_blank" rel="noreferrer">
+                      {post.blogUrl}
+                    </a>
+                  </>
+                )}
+                {' '}
+                – {new Date(post.publishedAt).toLocaleString()}
               </p>
-              {selectedPostId === post.id && (
+              {selectedPostId === post.postId && (
                 <>
                   {detailError && <p role="alert">{detailError}</p>}
-                  {postDetails[post.id]?.content && (
-                    <p>{postDetails[post.id].content}</p>
+                  {postDetails[post.postId]?.content && (
+                    <p>{postDetails[post.postId].content}</p>
                   )}
                 </>
               )}
               <div className="actions">
-                <button type="button" onClick={() => setSelectedPostId(post.id)}>
+                <button type="button" onClick={() => setSelectedPostId(post.postId)}>
                   Ver detalles
                 </button>{' '}
-                <button type="button" onClick={() => handleDelete(post.id)}>
+                <button type="button" onClick={() => handleDelete(post.postId)}>
                   Eliminar
                 </button>
               </div>
-              {selectedPostId === post.id && (
+              {selectedPostId === post.postId && (
                 <div className="comments">
                   <CommentList
-                    postId={post.id}
-                    refreshToken={commentRefresh[post.id] ?? 0}
+                    postId={post.postId}
+                    refreshToken={commentRefresh[post.postId] ?? 0}
                   />
                   <CommentForm
-                    postId={post.id}
-                    onCreated={() => handleCommentCreated(post.id)}
+                    postId={post.postId}
+                    onCreated={() => handleCommentCreated(post.postId)}
                   />
                 </div>
               )}

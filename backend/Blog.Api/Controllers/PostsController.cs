@@ -38,7 +38,17 @@ public class PostsController : ControllerBase
     public async Task<ActionResult<PostDetailDto>> Create(PostCreateDto dto, CancellationToken cancellationToken)
     {
         var created = await _postService.CreateAsync(dto, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        if (created is null)
+        {
+            if (dto.BlogId.HasValue)
+            {
+                return NotFound($"Blog {dto.BlogId.Value} was not found.");
+            }
+
+            return BadRequest("Debe indicar un autor de blog válido o un identificador de blog existente.");
+        }
+
+        return CreatedAtAction(nameof(GetById), new { id = created.PostId }, created);
     }
 
     [HttpPut("{id:int}")]

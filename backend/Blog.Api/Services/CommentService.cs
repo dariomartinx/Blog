@@ -33,7 +33,7 @@ public class CommentService : ICommentService
 
     public async Task<CommentDto?> CreateAsync(int postId, CommentCreateDto dto, CancellationToken cancellationToken = default)
     {
-        var postExists = await _context.Posts.AnyAsync(p => p.Id == postId, cancellationToken);
+        var postExists = await _context.Posts.AnyAsync(p => p.PostId == postId, cancellationToken);
         if (!postExists)
         {
             return null;
