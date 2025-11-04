@@ -2,10 +2,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Blog.Api.Dtos;
 
-public record PostSummaryDto(int Id, string Title, string AuthorName, DateTime PublishedAt);
+public record PostSummaryDto(int PostId, string Title, int BlogId, string? BlogAuthor, string? BlogUrl, DateTime PublishedAt);
 
-public record PostDetailDto(int Id, string Title, string AuthorName, DateTime PublishedAt, string Content,
-    IReadOnlyCollection<CommentDto> Comments);
+public record PostDetailDto(int PostId, string Title, int BlogId, string? BlogAuthor, string? BlogUrl, DateTime PublishedAt,
+    string Content, IReadOnlyCollection<CommentDto> Comments);
 
 public record PostCreateDto
 {
@@ -14,13 +14,17 @@ public record PostCreateDto
     public string Title { get; init; } = string.Empty;
 
     [Required]
-    [MaxLength(100)]
-    public string AuthorName { get; init; } = string.Empty;
-
-    [Required]
     public string Content { get; init; } = string.Empty;
 
     public DateTime? PublishedAt { get; init; }
+
+    public int? BlogId { get; init; }
+
+    [MaxLength(100)]
+    public string? BlogAuthor { get; init; }
+
+    [Url]
+    public string? BlogUrl { get; init; }
 }
 
 public record PostUpdateDto
@@ -30,13 +34,17 @@ public record PostUpdateDto
     public string Title { get; init; } = string.Empty;
 
     [Required]
-    [MaxLength(100)]
-    public string AuthorName { get; init; } = string.Empty;
-
-    [Required]
     public string Content { get; init; } = string.Empty;
 
     public DateTime? PublishedAt { get; init; }
+
+    public int? BlogId { get; init; }
+
+    [MaxLength(100)]
+    public string? BlogAuthor { get; init; }
+
+    [Url]
+    public string? BlogUrl { get; init; }
 }
 
 public record CommentDto(int Id, int PostId, string AuthorName, string Content, DateTime CreatedAt);

@@ -9,6 +9,7 @@ public class BlogDbContext : DbContext
     {
     }
 
+    public DbSet<Blog> Blogs => Set<Blog>();
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<Comment> Comments => Set<Comment>();
 
@@ -16,14 +17,26 @@ public class BlogDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<Blog>(entity =>
+        {
+            entity.ToTable("Blogs");
+            entity.HasKey(b => b.BlogId);
+            entity.Property(b => b.Url).HasMaxLength(200);
+            entity.Property(b => b.Author).HasMaxLength(100);
+            entity.Property(b => b.CreatedAt).IsRequired();
+        });
+
         modelBuilder.Entity<Post>(entity =>
         {
             entity.ToTable("Posts");
-            entity.HasKey(p => p.Id);
+            entity.HasKey(p => p.PostId);
             entity.Property(p => p.Title).IsRequired().HasMaxLength(200);
-            entity.Property(p => p.AuthorName).IsRequired().HasMaxLength(100);
             entity.Property(p => p.Content).IsRequired();
             entity.Property(p => p.PublishedAt).IsRequired();
+            entity.HasOne(p => p.Blog)
+                .WithMany(b => b.Posts)
+                .HasForeignKey(p => p.BlogId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Comment>(entity =>

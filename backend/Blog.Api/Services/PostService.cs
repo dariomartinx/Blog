@@ -17,20 +17,30 @@ public class PostService : IPostService
     public async Task<IReadOnlyCollection<PostSummaryDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Posts
+            .Include(p => p.Blog)
             .OrderByDescending(p => p.PublishedAt)
-            .Select(p => new PostSummaryDto(p.Id, p.Title, p.AuthorName, p.PublishedAt))
+            .Select(p => new PostSummaryDto(
+                p.PostId,
+                p.Title,
+                p.BlogId,
+                p.Blog != null ? p.Blog.Author : null,
+                p.Blog != null ? p.Blog.Url : null,
+                p.PublishedAt))
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<PostDetailDto?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<PostDetailDto?> GetByIdAsync(int postId, CancellationToken cancellationToken = default)
     {
         return await _context.Posts
+            .Include(p => p.Blog)
             .Include(p => p.Comments)
-            .Where(p => p.Id == id)
+            .Where(p => p.PostId == postId)
             .Select(p => new PostDetailDto(
-                p.Id,
+                p.PostId,
                 p.Title,
-                p.AuthorName,
+                p.BlogId,
+                p.Blog != null ? p.Blog.Author : null,
+                p.Blog != null ? p.Blog.Url : null,
                 p.PublishedAt,
                 p.Content,
                 p.Comments
@@ -40,33 +50,102 @@ public class PostService : IPostService
             .SingleOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<PostDetailDto> CreateAsync(PostCreateDto dto, CancellationToken cancellationToken = default)
+    public async Task<PostDetailDto?> CreateAsync(PostCreateDto dto, CancellationToken cancellationToken = default)
     {
+        Blog? blog = null;
+
+        if (dto.BlogId.HasValue)
+        {
+            blog = await _context.Blogs.FindAsync(new object?[] { dto.BlogId.Value }, cancellationToken);
+            if (blog is null)
+            {
+                return null;
+            }
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(dto.BlogAuthor))
+            {
+                return null;
+            }
+
+            blog = new Blog
+            {
+                Author = dto.BlogAuthor.Trim(),
+                Url = NormalizeOptional(dto.BlogUrl)
+            };
+
+            _context.Blogs.Add(blog);
+        }
+
         var post = new Post
         {
             Title = dto.Title.Trim(),
-            AuthorName = dto.AuthorName.Trim(),
             Content = dto.Content,
             PublishedAt = dto.PublishedAt ?? DateTime.UtcNow
         };
 
+        if (dto.BlogId.HasValue)
+        {
+            post.BlogId = blog!.BlogId;
+        }
+        else
+        {
+            post.Blog = blog;
+        }
+
         _context.Posts.Add(post);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return await GetByIdAsync(post.Id, cancellationToken) ??
-               new PostDetailDto(post.Id, post.Title, post.AuthorName, post.PublishedAt, post.Content, Array.Empty<CommentDto>());
+        return await GetByIdAsync(post.PostId, cancellationToken);
     }
 
-    public async Task<bool> UpdateAsync(int id, PostUpdateDto dto, CancellationToken cancellationToken = default)
+    public async Task<bool> UpdateAsync(int postId, PostUpdateDto dto, CancellationToken cancellationToken = default)
     {
-        var post = await _context.Posts.FindAsync(new object?[] { id }, cancellationToken);
+        var post = await _context.Posts
+            .Include(p => p.Blog)
+            .FirstOrDefaultAsync(p => p.PostId == postId, cancellationToken);
         if (post is null)
         {
             return false;
         }
 
+        if (dto.BlogId.HasValue)
+        {
+            var newBlog = await _context.Blogs.FindAsync(new object?[] { dto.BlogId.Value }, cancellationToken);
+            if (newBlog is null)
+            {
+                return false;
+            }
+
+            post.BlogId = newBlog.BlogId;
+            post.Blog = newBlog;
+        }
+        else if (!string.IsNullOrWhiteSpace(dto.BlogAuthor))
+        {
+            if (post.Blog is null)
+            {
+                post.Blog = new Blog
+                {
+                    Author = dto.BlogAuthor.Trim(),
+                    Url = NormalizeOptional(dto.BlogUrl)
+                };
+            }
+            else
+            {
+                post.Blog.Author = dto.BlogAuthor.Trim();
+                if (dto.BlogUrl is not null)
+                {
+                    post.Blog.Url = NormalizeOptional(dto.BlogUrl);
+                }
+            }
+        }
+        else if (dto.BlogUrl is not null && post.Blog is not null)
+        {
+            post.Blog.Url = NormalizeOptional(dto.BlogUrl);
+        }
+
         post.Title = dto.Title.Trim();
-        post.AuthorName = dto.AuthorName.Trim();
         post.Content = dto.Content;
         post.PublishedAt = dto.PublishedAt ?? post.PublishedAt;
 
@@ -74,9 +153,9 @@ public class PostService : IPostService
         return true;
     }
 
-    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(int postId, CancellationToken cancellationToken = default)
     {
-        var post = await _context.Posts.FindAsync(new object?[] { id }, cancellationToken);
+        var post = await _context.Posts.FindAsync(new object?[] { postId }, cancellationToken);
         if (post is null)
         {
             return false;
@@ -86,4 +165,6 @@ public class PostService : IPostService
         await _context.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    private static string? NormalizeOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 }
