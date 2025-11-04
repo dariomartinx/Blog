@@ -17,6 +17,7 @@ public class PostService : IPostService
     public async Task<IReadOnlyCollection<PostSummaryDto>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Posts
+            .AsNoTracking()
             .Include(p => p.Blog)
             .OrderByDescending(p => p.PublishedAt)
             .Select(p => new PostSummaryDto(
@@ -32,6 +33,7 @@ public class PostService : IPostService
     public async Task<PostDetailDto?> GetByIdAsync(int postId, CancellationToken cancellationToken = default)
     {
         return await _context.Posts
+            .AsNoTracking()
             .Include(p => p.Blog)
             .Include(p => p.Comments)
             .Where(p => p.PostId == postId)
@@ -56,8 +58,10 @@ public class PostService : IPostService
 
         if (dto.BlogId.HasValue)
         {
-            blog = await _context.Blogs.FindAsync(new object?[] { dto.BlogId.Value }, cancellationToken);
-            if (blog is null)
+            var blogExists = await _context.Blogs
+                .AsNoTracking()
+                .AnyAsync(b => b.BlogId == dto.BlogId.Value, cancellationToken);
+            if (!blogExists)
             {
                 return null;
             }
@@ -87,7 +91,7 @@ public class PostService : IPostService
 
         if (dto.BlogId.HasValue)
         {
-            post.BlogId = blog!.BlogId;
+            post.BlogId = dto.BlogId.Value;
         }
         else
         {
