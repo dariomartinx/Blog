@@ -1,0 +1,21 @@
+# Backend build artifacts
+backend/**/bin/
+backend/**/obj/
+
+# Frontend dependencies
+frontend/node_modules/
+frontend/dist/
+
+# Database files
+backend/**/*.db
+backend/**/*.db-journal
+
+# IDE and tooling
+.vscode/
+.idea/
+*.user
+*.suo
+*.cache
+
+# Logs
+**/*.log
