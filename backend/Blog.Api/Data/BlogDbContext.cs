@@ -17,7 +17,7 @@ public class BlogDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Blog>(entity =>
+        modelBuilder.Entity<Models.Blog>(entity =>
         {
             entity.ToTable("Blogs");
             entity.HasKey(b => b.BlogId);
