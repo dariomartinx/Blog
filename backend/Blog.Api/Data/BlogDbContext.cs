@@ -9,7 +9,7 @@ public class BlogDbContext : DbContext
     {
     }
 
-    public DbSet<Blog> Blogs => Set<Blog>();
+    public DbSet<Models.Blog> Blogs => Set<Models.Blog>();
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<Comment> Comments => Set<Comment>();
 
