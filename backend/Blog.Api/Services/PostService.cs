@@ -1,6 +1,7 @@
 using Blog.Api.Data;
 using Blog.Api.Dtos;
 using Blog.Api.Models;
+using BlogModel = Blog.Api.Models.Blog;
 using Microsoft.EntityFrameworkCore;
 
 namespace Blog.Api.Services;
@@ -54,7 +55,7 @@ public class PostService : IPostService
 
     public async Task<PostDetailDto?> CreateAsync(PostCreateDto dto, CancellationToken cancellationToken = default)
     {
-        Blog? blog = null;
+        BlogModel? blog = null;
 
         if (dto.BlogId.HasValue)
         {
@@ -73,7 +74,7 @@ public class PostService : IPostService
                 return null;
             }
 
-            blog = new Blog
+            blog = new BlogModel
             {
                 Author = dto.BlogAuthor.Trim(),
                 Url = NormalizeOptional(dto.BlogUrl)
@@ -129,7 +130,7 @@ public class PostService : IPostService
         {
             if (post.Blog is null)
             {
-                post.Blog = new Blog
+                post.Blog = new BlogModel
                 {
                     Author = dto.BlogAuthor.Trim(),
                     Url = NormalizeOptional(dto.BlogUrl)
